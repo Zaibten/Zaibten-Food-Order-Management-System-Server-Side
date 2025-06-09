@@ -13,13 +13,13 @@ require('dotenv').config();
 
 // Initialize Firebase App
 const firebaseApp = initializeApp({
-  apiKey: "AIzaSyD6OzSxTCO4YGygFWuj3MZfe2BcXPSnJ1s",
-  authDomain: "saloon-a805a.firebaseapp.com",
-  projectId: "saloon-a805a",
-  storageBucket: "saloon-a805a.firebasestorage.app",
-  messagingSenderId: "769957782953",
-  appId: "1:769957782953:web:fc119110c2f9403f5050b8",
-  measurementId: "G-T2VLH1LDVV",
+  apiKey: "AIzaSyAd0K-Y8AnNXSJXQRZeQtphPZQPOkSAgmo",
+  authDomain: "foodplanet-82388.firebaseapp.com",
+  projectId: "foodplanet-82388",
+  storageBucket: "foodplanet-82388.firebasestorage.app",
+  messagingSenderId: "898880937459",
+  appId: "1:898880937459:web:2c23717c73ffdf2eef8686",
+  measurementId: "G-CPEP0M2EXG"
 });
 
 // Initialize Firestore
@@ -734,6 +734,63 @@ app.post("/send-tablebooking-email", async (req, res) => {
   } catch (error) {
     console.error("Error sending booking email:", error);
     res.status(500).json({ error: "Failed to send booking email" });
+  }
+});
+
+app.post("/send-deletion-email", async (req, res) => {
+  const { toEmail, serviceName, bookingDate, bookingTime, totalPrice } = req.body;
+
+  if (!toEmail || !serviceName || !bookingDate || !bookingTime || !totalPrice) {
+    return res.status(400).json({ error: "Missing booking deletion information" });
+  }
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #f44336; padding: 20px; text-align: center;">
+        <img src="cid:logo" alt="FoodApp Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: white; padding: 8px;" />
+        <h1 style="color: #fff; margin: 10px 0 0;">Booking Cancellation</h1>
+        <p style="color: #fdecea; margin: 5px 0 0;">Your booking has been cancelled</p>
+      </div>
+
+      <div style="padding: 20px; color: #333;">
+        <p>Hi,</p>
+        <p>We regret to inform you that your booking has been deleted. Below are the details:</p>
+        <ul style="list-style-type:none; padding: 0;">
+          <li><strong>Service Name:</strong> ${serviceName}</li>
+          <li><strong>Booking Date:</strong> ${bookingDate}</li>
+          <li><strong>Booking Time:</strong> ${bookingTime}</li>
+          <li><strong>Total Price:</strong> ${totalPrice}</li>
+        </ul>
+        <p style="margin-top: 20px;">If this was unexpected or you believe it's an error, please contact our support team.</p>
+        <p style="margin-top: 30px; font-size: 12px; color: #999;">This is an automated message. Please do not reply.</p>
+        <p style="font-size: 15px; margin-top: 30px;">Thank you,<br/><strong>Team FoodApp</strong></p>
+      </div>
+
+      <div style="background-color: #f9f9f9; text-align: center; padding: 12px; font-size: 13px; color: #999;">
+        This is an automated email. Please don’t reply to it.
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"FoodApp Cancellation" <${senderEmail}>`,
+      to: toEmail,
+      subject: "Booking Cancellation Notice",
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "assets/logo.png"),
+          cid: "logo", // referenced in <img src="cid:logo" />
+        },
+      ],
+    });
+
+    res.status(200).json({ message: "Cancellation email sent successfully." });
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    res.status(500).json({ message: "Failed to send email." });
   }
 });
 
