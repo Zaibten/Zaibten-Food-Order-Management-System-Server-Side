@@ -33,8 +33,11 @@ app.use(bodyParser.json());
 
 // SMTP Credentials
 
-const senderEmail = "laibaimran910@gmail.com";
-const senderPassword = "qlqy ozpj napw topa";
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
+
+const senderEmail = "muzamilkhanofficial786@gmail.com";
+const senderPassword = "sghw vxwt jxau fmjt";
 
 // Create a transporter
 const transporter = nodemailer.createTransport({
@@ -533,8 +536,211 @@ app.get("/api/images", (req, res) => {
   res.json(validImages);
 });
 
+app.post("/send-order-email", async (req, res) => {
+  const { to, name, cartItems, total, address } = req.body;
+
+  const cartListHtml = cartItems.map(item => `
+    <tr>
+      <td style="padding: 10px; border-top: 1px solid #eee;">${item.ServiceName}</td>
+      <td style="padding: 10px; border-top: 1px solid #eee;">${item.quantity}</td>
+      <td style="padding: 10px; border-top: 1px solid #eee;">Rs ${item.Price}</td>
+    </tr>
+  `).join("");
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
+        <img src="cid:logo" alt="FoodApp Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: white; padding: 8px;" />
+        <h1 style="color: #fff; margin: 10px 0 0;">Order Confirmed</h1>
+        <p style="color: #e0f2e9; margin: 5px 0 0;">Thanks for choosing FoodApp</p>
+      </div>
+
+      <div style="padding: 20px;">
+        <p style="font-size: 16px;">Hi <strong>${name}</strong>,</p>
+        <p style="font-size: 15px; color: #555;">We’ve received your order. Here’s what you ordered:</p>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+          <thead>
+            <tr style="background: #f5f5f5;">
+              <th style="text-align: left; padding: 10px;">Item</th>
+              <th style="text-align: left; padding: 10px;">Qty</th>
+              <th style="text-align: left; padding: 10px;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cartListHtml}
+            <tr style="font-weight: bold;">
+              <td colspan="2" style="padding: 10px; border-top: 2px solid #ccc;">Total</td>
+              <td style="padding: 10px; border-top: 2px solid #ccc;">Rs ${total}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 20px;">
+          <p style="font-size: 15px;"><strong>Delivery Address:</strong><br>${address}</p>
+        </div>
+
+        <p style="font-size: 15px; margin-top: 30px;">Enjoy your meal!<br/><strong>Team FoodApp</strong></p>
+      </div>
+
+      <div style="background-color: #f9f9f9; text-align: center; padding: 12px; font-size: 13px; color: #999;">
+        This is an automated email. Please don’t reply to it.
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"FoodApp Orders" <muzamilkhanofficial786@gmail.com>`,
+      to,
+      subject: "Your Order Confirmation",
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "assets/logo.png"),
+          cid: "logo", // referenced in <img src="cid:logo" />
+        },
+      ],
+    });
+
+    res.status(200).json({ message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Email Error:", error);
+    res.status(500).json({ message: "Failed to send email" });
+  }
+});
+
+app.post("/send-delivery-email", async (req, res) => {
+  const { to, name } = req.body;
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
+        <img src="cid:logo" alt="FoodApp Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: white; padding: 8px;" />
+        <h1 style="color: #fff; margin: 10px 0 0;">Order Delivered</h1>
+        <p style="color: #e0f2e9; margin: 5px 0 0;">Thanks for choosing FoodApp</p>
+      </div>
+
+      <div style="padding: 20px;">
+      <p>Hi <strong>${name || "Customer"}</strong>,</p>
+      <p>Your order has been delivered successfully.</p>
+      <p>We hope you enjoy your meal 🍽️!</p>
+      <p style="margin-top: 20px;">Thank you for ordering with <strong>FoodApp</strong>.</p>
+      <div style="margin-top: 30px; font-size: 12px; color: #999;">
+        This is an automated message. Please do not reply.
+      </div>
+
+        <p style="font-size: 15px; margin-top: 30px;">Enjoy your meal!<br/><strong>Team FoodApp</strong></p>
+      </div>
+
+      <div style="background-color: #f9f9f9; text-align: center; padding: 12px; font-size: 13px; color: #999;">
+        This is an automated email. Please don’t reply to it.
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"FoodApp Delivery" <muzamilkhanofficial786@gmail.com>`,
+      to,
+      subject: "Your Order is Delivered - Enjoy Your Meal!",
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "assets/logo.png"),
+          cid: "logo", // referenced in <img src="cid:logo" />
+        },
+      ],
+    });
+
+    res.status(200).json({ message: "Delivery email sent" });
+  } catch (error) {
+    console.error("Delivery Email Error:", error);
+    res.status(500).json({ message: "Failed to send delivery email" });
+  }
+});
+
+
+app.post("/send-tablebooking-email", async (req, res) => {
+  const {
+    restaurantEmail,
+    restaurantName,
+    userName,
+    userEmail,
+    bookingDate,
+    bookingTime,
+    numberOfGuests,
+  } = req.body;
+
+  if (
+    !restaurantEmail ||
+    !restaurantName ||
+    !userName ||
+    !userEmail ||
+    !bookingDate ||
+    !bookingTime ||
+    !numberOfGuests
+  ) {
+    return res.status(400).json({ error: "Missing booking information" });
+  }
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
+        <img src="cid:logo" alt="FoodApp Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: white; padding: 8px;" />
+        <h1 style="color: #fff; margin: 10px 0 0;">New Table Booking</h1>
+        <p style="color: #e0f2e9; margin: 5px 0 0;">Booking notification from <strong>${restaurantName}</strong></p>
+      </div>
+
+      <div style="padding: 20px; color: #333;">
+        <p>Hi <strong>${restaurantName}</strong>,</p>
+        <p>You have a new table booking with the following details:</p>
+        <ul style="list-style-type:none; padding: 0;">
+          <li><strong>Customer Name:</strong> ${userName}</li>
+          <li><strong>Customer Email:</strong> ${userEmail}</li>
+          <li><strong>Booking Date:</strong> ${bookingDate}</li>
+          <li><strong>Booking Time:</strong> ${bookingTime}</li>
+          <li><strong>Number of Guests:</strong> ${numberOfGuests}</li>
+        </ul>
+        <p style="margin-top: 20px;">Please confirm the booking at your earliest convenience.</p>
+        <p style="margin-top: 30px; font-size: 12px; color: #999;">This is an automated message. Please do not reply.</p>
+        <p style="font-size: 15px; margin-top: 30px;">Thank you,<br/><strong>Team FoodApp</strong></p>
+      </div>
+
+      <div style="background-color: #f9f9f9; text-align: center; padding: 12px; font-size: 13px; color: #999;">
+        This is an automated email. Please don’t reply to it.
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"FoodApp Booking" <${senderEmail}>`,
+      to: restaurantEmail,
+      subject: `New Table Booking from ${userName}`,
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "assets/logo.png"),
+          cid: "logo", // referenced in <img src="cid:logo" />
+        },
+      ],
+    });
+
+    res.json({ success: true, message: "Booking email sent to restaurant" });
+  } catch (error) {
+    console.error("Error sending booking email:", error);
+    res.status(500).json({ error: "Failed to send booking email" });
+  }
+});
+
+
+
 // Start Server
-const PORT = 8080;
+const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
