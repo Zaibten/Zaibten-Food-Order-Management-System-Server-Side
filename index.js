@@ -795,6 +795,88 @@ app.post("/send-deletion-email", async (req, res) => {
 });
 
 
+app.post("/send-confirmtablebooking-email", async (req, res) => {
+  const {
+    restaurantEmail,
+    restaurantName,
+    userName,
+    userEmail,
+    bookingDate,
+    bookingTime,
+    numberOfGuests,
+  } = req.body;
+
+  if (
+    !restaurantEmail ||
+    !restaurantName ||
+    !userName ||
+    !userEmail ||
+    !bookingDate ||
+    !bookingTime ||
+    !numberOfGuests
+  ) {
+    return res.status(400).json({ error: "Missing booking information" });
+  }
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #4CAF50; padding: 20px; text-align: center;">
+        <img src="cid:logo" alt="FoodApp Logo" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: white; padding: 8px;" />
+        <h1 style="color: #fff; margin: 10px 0 0;">Table Booking Confirmed</h1>
+        <p style="color: #e0f2e9; margin: 5px 0 0;">Booking confirmation from <strong>${restaurantName}</strong></p>
+      </div>
+
+      <div style="padding: 20px; color: #333;">
+        <p>Hi <strong>${userName}</strong>,</p>
+        <p>Your table booking at <strong>${restaurantName}</strong> has been <strong>confirmed</strong> with the following details:</p>
+        <ul style="list-style-type:none; padding: 0;">
+          <li><strong>Booking Date:</strong> ${bookingDate}</li>
+          <li><strong>Booking Time:</strong> ${bookingTime}</li>
+          <li><strong>Number of Guests:</strong> ${numberOfGuests}</li>
+        </ul>
+        <p style="margin-top: 20px;">We look forward to welcoming you!</p>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <p><strong>Scan this QR code on arrival:</strong></p>
+          <img src="cid:qrcode" alt="QR Code" style="width: 150px; height: 150px;" />
+        </div>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #999;">This is an automated message. Please do not reply.</p>
+        <p style="font-size: 15px; margin-top: 30px;">Thank you,<br/><strong>Team FoodApp</strong></p>
+      </div>
+
+      <div style="background-color: #f9f9f9; text-align: center; padding: 12px; font-size: 13px; color: #999;">
+        This is an automated email. Please don’t reply to it.
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"FoodApp Booking" <${senderEmail}>`,
+      to: userEmail, // Send to user email here
+      subject: `Your Table Booking at ${restaurantName} is Confirmed`,
+      html: htmlContent,
+      attachments: [
+        {
+          filename: "logo.png",
+          path: path.join(__dirname, "assets/logo.png"),
+          cid: "logo", // referenced in <img src="cid:logo" />
+        },
+        {
+          filename: "qrcode.png",
+          path: path.join(__dirname, "assets/qrcode.png"), // Put your QR code image here locally
+          cid: "qrcode", // referenced in <img src="cid:qrcode" />
+        },
+      ],
+    });
+
+    res.json({ success: true, message: "Booking confirmation email sent to user" });
+  } catch (error) {
+    console.error("Error sending booking email:", error);
+    res.status(500).json({ error: "Failed to send booking email" });
+  }
+});
 
 // Start Server
 const PORT = 5000;
